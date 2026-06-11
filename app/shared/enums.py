@@ -68,10 +68,7 @@ class StatutPaiement(str, Enum):
 class ModePaiement(str, Enum):
     MTN_MOBILE_MONEY = "mtn_mobile_money"
     ORANGE_MONEY     = "orange_money"
-    MOOV             = "moov"
-    CARTE_BANCAIRE   = "carte_bancaire"
     VIREMENT         = "virement"
-    AUTRE            = "autre"
 
 
 # ─────────────────────────────────────────────
@@ -81,7 +78,6 @@ class StatutPresence(str, Enum):
     PRESENT   = "present"    # Stagiaire présent
     ABSENT    = "absent"     # Absent sans justification
     JUSTIFIE  = "justifie"   # Absent avec justification acceptée
-    FERIE     = "ferie"      # Jour férié ou congé officiel
 
 
 # ─────────────────────────────────────────────
@@ -109,8 +105,7 @@ class TypeNotification(str, Enum):
 class TypeRapport(str, Enum):
     RAPPORT_STAGE   = "rapport_stage"
     ATTESTATION_FIN = "attestation_fin"
-    BILAN_MENSUEL   = "bilan_mensuel"
-    EXPORT_CSV      = "export_csv"
+    RECU_PAIEMENT   = "recu_paiement"
 
 
 # ─────────────────────────────────────────────

@@ -33,7 +33,7 @@ class Utilisateur(Base):
 
     # ── Clé primaire ──────────────────────────────────────────
     id = Column(
-        String,
+        String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4()),
         index=True,
@@ -68,8 +68,15 @@ class Utilisateur(Base):
     )
 
     # ── Rôle et statut ────────────────────────────────────────
+    # CORRECTIF : values_callable force l'envoi de la VALEUR
+    # ("stagiaire") et non du NOM de la constante ("STAGIAIRE")
     role = Column(
-        SAEnum(RoleEnum, name="roleenum", create_type=False),
+        SAEnum(
+            RoleEnum,
+            values_callable=lambda x: [e.value for e in x],
+            name="roleenum",
+            create_type=False,  # Le type existe déjà dans PostgreSQL
+        ),
         nullable=False,
         default=RoleEnum.STAGIAIRE,
         comment="Rôle : admin | encadreur | stagiaire",
@@ -92,7 +99,7 @@ class Utilisateur(Base):
     url_photo = Column(
         String(500),
         nullable=True,
-        comment="URL photo de profil — Supabase Storage",
+        comment="URL photo de profil",
     )
 
     # ── Horodatages ───────────────────────────────────────────

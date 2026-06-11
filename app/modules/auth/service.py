@@ -167,68 +167,12 @@ class ServiceAuth:
     async def _envoyer_email_reinitialisation(
         self, courriel: str, nom_complet: str, token: str
     ) -> None:
-        """
-        Envoie l'email avec le lien de réinitialisation.
-        Le lien pointe vers le frontend React avec le token en paramètre.
-        """
-        try:
-            from app.utils.email import envoyer_email
-            from app.core.config import obtenir_parametres
-
-            parametres = obtenir_parametres()
-
-            # URL du frontend — à configurer dans .env
-            # Ex: https://hr-skills.cm/reinitialiser-mdp?token=xxx
-            lien = f"http://localhost:3000/reinitialiser-mdp?token={token}"
-
-            sujet = "Réinitialisation de votre mot de passe — HR-Skills"
-
-            corps_html = f"""
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #1B3A6B;">Réinitialisation de mot de passe</h2>
-                <p>Bonjour <strong>{nom_complet}</strong>,</p>
-                <p>
-                    Vous avez demandé la réinitialisation de votre mot de passe
-                    sur la plateforme HR-Skills Stage.
-                </p>
-                <p>
-                    Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe.
-                    <strong>Ce lien est valable 30 minutes.</strong>
-                </p>
-                <div style="text-align: center; margin: 32px 0;">
-                    <a href="{lien}"
-                       style="background: #1B3A6B; color: white; padding: 14px 32px;
-                              border-radius: 8px; text-decoration: none; font-size: 16px;">
-                        Réinitialiser mon mot de passe
-                    </a>
-                </div>
-                <p style="color: #666; font-size: 13px;">
-                    Si vous n'avez pas demandé cette réinitialisation,
-                    ignorez cet email. Votre mot de passe ne sera pas modifié.
-                </p>
-                <p style="color: #666; font-size: 13px;">
-                    Ou copiez ce lien dans votre navigateur :<br/>
-                    <code>{lien}</code>
-                </p>
-                <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;"/>
-                <p style="color: #999; font-size: 12px;">
-                    HR-Skills SARL — Yaoundé, Cameroun
-                </p>
-            </div>
-            """
-
-            await envoyer_email(
-                destinataire=courriel,
-                sujet=sujet,
-                corps_html=corps_html,
-            )
-
-        except Exception as e:
-            # Ne pas bloquer si l'email échoue — logger l'erreur
-            import logging
-            logging.getLogger("hr_skills").error(
-                f"Échec envoi email réinitialisation à {courriel} : {e}"
-            )
+        from app.utils.email import envoyer_email_reinitialisation_mdp
+        await envoyer_email_reinitialisation_mdp(
+            courriel=courriel,
+            nom_complet=nom_complet,
+            token=token,
+        )
 
     # ─────────────────────────────────────────
     # MOT DE PASSE OUBLIÉ — ÉTAPE 2

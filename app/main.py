@@ -6,7 +6,7 @@ Point d'entrée principal de l'application FastAPI HR-Skills Stage.
 Lancement :
     uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-Auteur : TAKADJIO Mohamed — Developpeur Full Stack
+Auteur : TAKADJIO Mohamed — Chef UAT
 """
 
 import logging
@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from app.core.config import obtenir_parametres
@@ -24,11 +25,10 @@ from app.middleware.logging import configurer_journalisation
 from app.middleware.error_handler import configurer_gestionnaires_erreurs
 from app.middleware.rate_limiter import configurer_limite_debit
 from app.shared.constants import NOM_PROJET, VERSION_API, DESCRIPTION_API
+from app.utils.file_upload import initialiser_dossiers_uploads, DOSSIER_UPLOADS
 
-# ─────────────────────────────────────────────
-# IMPORT DES MODÈLES — découverte Alembic
-# ─────────────────────────────────────────────
-import app.modules.auth.models           # noqa: F401  ← AJOUTÉ (tokens_reinitialisation)
+# ── Import des modèles — découverte Alembic ───────────────────
+import app.modules.auth.models           # noqa: F401
 import app.modules.user.models           # noqa: F401
 import app.modules.stage.models          # noqa: F401
 import app.modules.enrollment.models     # noqa: F401
@@ -41,9 +41,7 @@ import app.modules.convention.models     # noqa: F401
 import app.modules.report.models         # noqa: F401
 import app.modules.audit_log.models      # noqa: F401
 
-# ─────────────────────────────────────────────
-# IMPORT DES ROUTERS
-# ─────────────────────────────────────────────
+# ── Import des routers ────────────────────────────────────────
 from app.modules.auth.router          import routeur as routeur_auth
 from app.modules.user.router          import routeur as routeur_utilisateur
 from app.modules.admin.router         import routeur as routeur_admin
@@ -72,31 +70,41 @@ logger     = logging.getLogger("hr_skills")
 async def lifespan(app: FastAPI):
     """
     Gère le cycle de vie de l'application.
-    - Démarrage : vérifie la connexion à la base de données
+    - Démarrage : vérifie la connexion BDD sans bloquer si indisponible
     - Arrêt     : ferme proprement le moteur de connexion
     """
-    # ── DÉMARRAGE ──────────────────────────────
+    # Initialisation des dossiers uploads en premier
+    # (ne dépend pas de la BDD)
+    initialiser_dossiers_uploads()
+
     logger.info("=" * 55)
     logger.info(f"  {NOM_PROJET} v{VERSION_API}")
     logger.info(f"  Environnement : {parametres.ENVIRONNEMENT.upper()}")
     logger.info("=" * 55)
 
+    # Test de connexion BDD — ne bloque PAS le démarrage si indisponible
+    # pool_pre_ping=True dans connection.py gère la reconnexion automatique
     try:
         async with moteur.connect() as connexion:
             resultat = await connexion.execute(text("SELECT current_database()"))
             nom_base = resultat.scalar()
         logger.info(f"✓ Base de données connectée : {nom_base}")
     except Exception as e:
-        logger.error(f"✗ Échec de connexion BDD : {e}")
-        raise
+        logger.warning(
+            f"⚠ Base de données inaccessible au démarrage : {e}\n"
+            f"  L'API démarre quand même — reconnexion automatique à chaque requête."
+        )
+        # Ne PAS faire raise — l'app démarre quand même
+        # pool_pre_ping gère la reconnexion automatiquement
 
+    logger.info("✓ Dossiers uploads initialisés")
     logger.info("✓ Application démarrée avec succès")
     logger.info("✓ Documentation : http://localhost:8000/docs")
     logger.info("=" * 55)
 
     yield  # ← L'application tourne ici
 
-    # ── ARRÊT ──────────────────────────────────
+    # ── ARRÊT ─────────────────────────────────
     logger.info("Arrêt de l'application en cours...")
     await moteur.dispose()
     logger.info("✓ Connexions BDD fermées proprement")
@@ -115,20 +123,24 @@ app = FastAPI(
     redoc_url="/redoc"          if not parametres.est_production else None,
     openapi_url="/openapi.json" if not parametres.est_production else None,
     contact={
-        "name":  "TAKADJIO Mohamed — Chef UAT",
+        "name":  "TAKADJIO Mohamed — Developpeur Full Stack",
         "email": "takadjio@hr-skills.cm",
     },
-    license_info={
-        "name": "HR-Skills SARL — Usage interne",
-    },
+    license_info={"name": "HR-Skills SARL — Usage interne"},
 )
 
+# ── Fichiers statiques — servir /uploads/ ─────────────────────
+# check_dir=False évite le crash si le dossier n'existe pas encore
+app.mount(
+    "/uploads",
+    StaticFiles(directory=str(DOSSIER_UPLOADS), check_dir=False),
+    name="uploads",
+)
 
 # ─────────────────────────────────────────────
 # MIDDLEWARES
-# Ordre important : le dernier ajouté s'exécute en premier
+# Ordre : le dernier ajouté s'exécute en premier
 # ─────────────────────────────────────────────
-
 configurer_gestionnaires_erreurs(app)   # 1. Erreurs globales
 configurer_limite_debit(app)            # 2. Rate limiting
 configurer_journalisation(app)          # 3. Logs requêtes
@@ -139,48 +151,21 @@ configurer_cors(app)                    # 4. CORS — exécuté en premier
 # ROUTERS MÉTIER
 # ─────────────────────────────────────────────
 
-# ── Authentification ──────────────────────────
-app.include_router(routeur_auth)
-
-# ── Utilisateurs ──────────────────────────────
-app.include_router(routeur_utilisateur)
-
-# ── Administration ────────────────────────────
-app.include_router(routeur_admin)
-
-# ── Espaces dédiés ────────────────────────────
-app.include_router(routeur_stagiaire)
-app.include_router(routeur_encadreur)
-
-# ── Offres de stage ───────────────────────────
-app.include_router(routeur_offre)
-
-# ── Inscriptions ──────────────────────────────
-app.include_router(routeur_inscription)
-
-# ── Documents ─────────────────────────────────
-app.include_router(routeur_document)
-
-# ── Paiements ─────────────────────────────────
-app.include_router(routeur_paiement)
-
-# ── Présences ─────────────────────────────────
-app.include_router(routeur_presence)
-
-# ── Évaluations ───────────────────────────────
-app.include_router(routeur_evaluation)
-
-# ── Notifications ─────────────────────────────
-app.include_router(routeur_notification)
-
-# ── Conventions ───────────────────────────────
-app.include_router(routeur_convention)
-
-# ── Rapports & Attestations ───────────────────
-app.include_router(routeur_rapport)
-
-# ── Journal d'audit ───────────────────────────
-app.include_router(routeur_audit)
+app.include_router(routeur_auth)          # /api/v1/auth
+app.include_router(routeur_utilisateur)   # /api/v1/utilisateurs
+app.include_router(routeur_admin)         # /api/v1/admin
+app.include_router(routeur_stagiaire)     # /api/v1/stagiaire
+app.include_router(routeur_encadreur)     # /api/v1/encadreur
+app.include_router(routeur_offre)         # /api/v1/offres-stage
+app.include_router(routeur_inscription)   # /api/v1/inscriptions
+app.include_router(routeur_document)      # /api/v1/documents
+app.include_router(routeur_paiement)      # /api/v1/paiements
+app.include_router(routeur_presence)      # /api/v1/presences
+app.include_router(routeur_evaluation)    # /api/v1/evaluations
+app.include_router(routeur_notification)  # /api/v1/notifications
+app.include_router(routeur_convention)    # /api/v1/conventions
+app.include_router(routeur_rapport)       # /api/v1/rapports
+app.include_router(routeur_audit)         # /api/v1/audit
 
 
 # ─────────────────────────────────────────────

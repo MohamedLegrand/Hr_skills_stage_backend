@@ -6,41 +6,29 @@ Hachage et vérification des mots de passe avec bcrypt.
 Auteur : TAKADJIO Mohamed — Chef UAT
 """
 
-from passlib.context import CryptContext
+import bcrypt as _bcrypt
 from app.shared.constants import ROUNDS_BCRYPT
-
-# Contexte bcrypt — schèmes autorisés
-contexte_crypto = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__rounds=ROUNDS_BCRYPT,
-)
 
 
 def hacher_mot_de_passe(mot_de_passe_clair: str) -> str:
-    """
-    Hache un mot de passe en clair avec bcrypt.
-
-    Exemple :
-        hash = hacher_mot_de_passe("MonMotDePasse123!")
-    """
-    return contexte_crypto.hash(mot_de_passe_clair)
+    sel = _bcrypt.gensalt(rounds=ROUNDS_BCRYPT)
+    return _bcrypt.hashpw(mot_de_passe_clair.encode("utf-8"), sel).decode("utf-8")
 
 
 def verifier_mot_de_passe(mot_de_passe_clair: str, hash_stocke: str) -> bool:
-    """
-    Compare un mot de passe en clair avec son hash bcrypt stocké.
-    Retourne True si le mot de passe correspond, False sinon.
-
-    Exemple :
-        est_valide = verifier_mot_de_passe("MonMotDePasse123!", hash_bdd)
-    """
-    return contexte_crypto.verify(mot_de_passe_clair, hash_stocke)
+    try:
+        return _bcrypt.checkpw(
+            mot_de_passe_clair.encode("utf-8"),
+            hash_stocke.encode("utf-8"),
+        )
+    except Exception:
+        return False
 
 
 def mot_de_passe_necessite_rehachage(hash_stocke: str) -> bool:
-    """
-    Vérifie si le hash doit être mis à jour
-    (par exemple si le nombre de rounds bcrypt a changé).
-    """
-    return contexte_crypto.needs_update(hash_stocke)
+    try:
+        parties = hash_stocke.split("$")
+        rounds_stockes = int(parties[2])
+        return rounds_stockes < ROUNDS_BCRYPT
+    except Exception:
+        return False

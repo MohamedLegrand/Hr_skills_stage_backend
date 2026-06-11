@@ -1,9 +1,5 @@
 """
 Chemin : Hr-skills-stage-backend/app/core/config.py
-----------------------------------------------------
-Compatible avec les noms de variables du fichier .env existant.
-Supporte les deux conventions (anglais ET français) pour éviter
-tout conflit entre .env et config.py.
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,54 +19,54 @@ class Parametres(BaseSettings):
 
     # ── Application ───────────────────────────────────────────
     NOM_APP:        str = "HR-Skills Stage API"
-    APP_NAME:       str = "HR-Skills Stage API"   # alias .env
+    APP_NAME:       str = "HR-Skills Stage API"
     VERSION:        str = "1.0.0"
-
-    # ENVIRONNEMENT accepte ENVIRONNEMENT ou APP_ENV depuis .env
     ENVIRONNEMENT:  str = "development"
-    APP_ENV:        str = "development"            # alias .env
-
+    APP_ENV:        str = "development"
     DEBUG:          bool = True
 
-    # ── Base de données ───────────────────────────────────────
+    # ── Frontend ──────────────────────────────────────────────
+    FRONTEND_URL:   str = "http://localhost:3000"
+
+    # ── Base de données PostgreSQL local ──────────────────────
     DATABASE_URL:      str = ""
     DATABASE_URL_SYNC: str = ""
     DB_ECHO_SQL:       bool = False
 
-    # ── JWT ── supporte les deux nommages ─────────────────────
-    SECRET_KEY:                    str = "changeme_minimum_32_chars_secret_key!!"
-    ALGORITHME_JWT:                str = "HS256"
-    ALGORITHM:                     str = "HS256"          # alias .env
-    DUREE_JETON_ACCES_MINUTES:     int = 1440
-    ACCESS_TOKEN_EXPIRE_MINUTES:   int = 1440             # alias .env
-    DUREE_JETON_RAFRAICH_JOURS:    int = 7
-    REFRESH_TOKEN_EXPIRE_DAYS:     int = 7                # alias .env
+    # ── JWT ───────────────────────────────────────────────────
+    SECRET_KEY:                    str  = "changeme_minimum_32_chars_secret_key!!"
+    ALGORITHME_JWT:                str  = "HS256"
+    ALGORITHM:                     str  = "HS256"
+    DUREE_JETON_ACCES_MINUTES:     int  = 1440
+    ACCESS_TOKEN_EXPIRE_MINUTES:   int  = 1440
+    DUREE_JETON_RAFRAICH_JOURS:    int  = 7
+    REFRESH_TOKEN_EXPIRE_DAYS:     int  = 7
+    DUREE_JETON_REINIT_MINUTES:    int  = 30
 
-    # ── Supabase ── supporte les deux nommages ────────────────
-    SUPABASE_URL:         str = ""
-    SUPABASE_KEY:         str = ""                        # alias .env
-    SUPABASE_ANON_KEY:    str = ""
-    SUPABASE_SERVICE_KEY: str = ""
+    # ── Stockage local ────────────────────────────────────────
+    UPLOAD_DIR:     str = "uploads"
+
+    # ── SMTP ──────────────────────────────────────────────────
+    SMTP_HOTE:          str  = "smtp.gmail.com"
+    SMTP_HOST:          str  = "smtp.gmail.com"
+    SMTP_PORT:          int  = 587
+    SMTP_UTILISATEUR:   str  = ""
+    SMTP_USER:          str  = ""
+    SMTP_MOT_DE_PASSE:  str  = ""
+    SMTP_PASSWORD:      str  = ""
+    SMTP_TLS:           bool = True
+    EMAIL_EXPEDITEUR:   str  = "noreply@hr-skills.cm"
+    EMAIL_FROM:         str  = "noreply@hr-skills.cm"
+    NOM_EXPEDITEUR:     str  = "HR-Skills SARL"
 
     # ── CORS ──────────────────────────────────────────────────
-    ORIGINES_AUTORISEES: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://hr-skills.cm",
-    ]
-
-    # ── SMTP ── supporte les deux nommages ────────────────────
-    SMTP_HOTE:          str = "smtp.gmail.com"
-    SMTP_HOST:          str = "smtp.gmail.com"            # alias .env
-    SMTP_PORT:          int = 587
-    SMTP_UTILISATEUR:   str = ""
-    SMTP_USER:          str = ""                          # alias .env
-    SMTP_MOT_DE_PASSE:  str = ""
-    SMTP_PASSWORD:      str = ""                          # alias .env
-    SMTP_TLS:           bool = True
-    EMAIL_EXPEDITEUR:   str = "noreply@hr-skills.cm"
-    EMAIL_FROM:         str = "noreply@hr-skills.cm"      # alias .env
-    NOM_EXPEDITEUR:     str = "HR-Skills SARL"
+    # Version CORRIGÉE : utiliser une chaîne puis la convertir
+    ORIGINES_AUTORISEES_STR: str = "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:5174"
+    
+    @property
+    def ORIGINES_AUTORISEES(self) -> List[str]:
+        """Convertit la chaîne en liste pour le CORS"""
+        return [o.strip() for o in self.ORIGINES_AUTORISEES_STR.split(",") if o.strip()]
 
     # ── CinetPay ──────────────────────────────────────────────
     CINETPAY_API_KEY:          str = ""
@@ -83,28 +79,20 @@ class Parametres(BaseSettings):
     STRIPE_CLE_SECRETE:  str = ""
     STRIPE_CLE_WEBHOOK:  str = ""
 
-    # ── Frontend ──────────────────────────────────────────────────
-    FRONTEND_URL: str = "http://localhost:3000"
-
-    # ── Réinitialisation mot de passe ─────────────────────────────
-    DUREE_JETON_REINIT_MINUTES: int = 30
-
     # ── Limites ───────────────────────────────────────────────
-    LIMITE_REQUETES_MINUTE: int = 100
+    LIMITE_REQUETES_MINUTE:   int = 100
     LIMITE_CONNEXIONS_MINUTE: int = 5
-    LIMITE_UPLOAD_MINUTE: int = 10
-    TAILLE_MAX_FICHIER_MO: int = 5
+    LIMITE_UPLOAD_MINUTE:     int = 10
+    TAILLE_MAX_FICHIER_MO:    int = 5
 
     # ── Propriétés calculées ──────────────────────────────────
     @property
     def est_production(self) -> bool:
-        env = self.ENVIRONNEMENT or self.APP_ENV
-        return env == "production"
+        return (self.ENVIRONNEMENT or self.APP_ENV) == "production"
 
     @property
     def est_developpement(self) -> bool:
-        env = self.ENVIRONNEMENT or self.APP_ENV
-        return env == "development"
+        return (self.ENVIRONNEMENT or self.APP_ENV) == "development"
 
     @property
     def taille_max_octets(self) -> int:
@@ -121,10 +109,6 @@ class Parametres(BaseSettings):
     @property
     def duree_rafraich_jours(self) -> int:
         return self.DUREE_JETON_RAFRAICH_JOURS or self.REFRESH_TOKEN_EXPIRE_DAYS
-
-    @property
-    def supabase_key(self) -> str:
-        return self.SUPABASE_ANON_KEY or self.SUPABASE_KEY
 
     @property
     def smtp_hote(self) -> str:
