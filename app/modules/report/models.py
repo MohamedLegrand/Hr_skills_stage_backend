@@ -27,7 +27,12 @@ class Rapport(Base):
     inscription_id = Column(String, ForeignKey("inscriptions.id", ondelete="CASCADE"), nullable=False, index=True)
 
     type_rapport = Column(
-        SAEnum(TypeRapport, name="typerapport", create_type=False),
+        SAEnum(
+            TypeRapport,
+            values_callable=lambda x: [e.value for e in x],
+            name="typerapport",
+            create_type=False,
+        ),
         nullable=False, index=True,
     )
 

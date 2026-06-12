@@ -34,11 +34,21 @@ class Paiement(Base):
     devise  = Column(String(10), nullable=False, default="XAF")
 
     mode_paiement = Column(
-        SAEnum(ModePaiement, name="modepaiement", create_type=False),
+        SAEnum(
+            ModePaiement,
+            values_callable=lambda x: [e.value for e in x],
+            name="modepaiement",
+            create_type=False,
+        ),
         nullable=False,
     )
     statut = Column(
-        SAEnum(StatutPaiement, name="statutpaiement", create_type=False),
+        SAEnum(
+            StatutPaiement,
+            values_callable=lambda x: [e.value for e in x],
+            name="statutpaiement",
+            create_type=False,
+        ),
         nullable=False, default=StatutPaiement.EN_ATTENTE, index=True,
     )
 

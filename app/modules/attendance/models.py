@@ -31,7 +31,12 @@ class Presence(Base):
     date_presence  = Column(Date, nullable=False, index=True)
 
     statut = Column(
-        SAEnum(StatutPresence, name="statutpresence", create_type=False),
+        SAEnum(
+            StatutPresence,
+            values_callable=lambda x: [e.value for e in x],
+            name="statutpresence",
+            create_type=False,
+        ),
         nullable=False, index=True,
     )
     commentaire    = Column(Text, nullable=True)

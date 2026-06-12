@@ -29,7 +29,12 @@ class Notification(Base):
     message = Column(Text, nullable=False)
 
     type_notif = Column(
-        SAEnum(TypeNotification, name="typenotification", create_type=False),
+        SAEnum(
+            TypeNotification,
+            values_callable=lambda x: [e.value for e in x],
+            name="typenotification",
+            create_type=False,
+        ),
         nullable=False, default=TypeNotification.INFO,
     )
 

@@ -25,14 +25,24 @@ class Document(Base):
 
     inscription_id = Column(String, ForeignKey("inscriptions.id", ondelete="CASCADE"), nullable=False, index=True)
     type_code      = Column(
-        SAEnum(TypeDocument, name="typedocument", create_type=False),
+        SAEnum(
+            TypeDocument,
+            values_callable=lambda x: [e.value for e in x],
+            name="typedocument",
+            create_type=False,
+        ),
         nullable=False, index=True,
     )
     url_fichier   = Column(String(500), nullable=False)
     taille_octets = Column(BigInteger, nullable=True)
 
     statut = Column(
-        SAEnum(StatutDocument, name="statutdocument", create_type=False),
+        SAEnum(
+            StatutDocument,
+            values_callable=lambda x: [e.value for e in x],
+            name="statutdocument",
+            create_type=False,
+        ),
         nullable=False, default=StatutDocument.EN_ATTENTE, index=True,
     )
     commentaire = Column(Text, nullable=True)   # Motif de rejet obligatoire

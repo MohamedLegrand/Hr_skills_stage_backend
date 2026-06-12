@@ -32,7 +32,12 @@ class Inscription(Base):
     encadreur_id = Column(String, ForeignKey("utilisateurs.id", ondelete="SET NULL"), nullable=True, index=True)
 
     statut = Column(
-        SAEnum(StatutInscription, name="statutinscription", create_type=False),
+        SAEnum(
+            StatutInscription,
+            values_callable=lambda x: [e.value for e in x],
+            name="statutinscription",
+            create_type=False,
+        ),
         nullable=False, default=StatutInscription.EN_ATTENTE, index=True,
     )
     motif_refus     = Column(Text, nullable=True)

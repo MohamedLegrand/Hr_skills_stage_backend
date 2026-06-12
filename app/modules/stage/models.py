@@ -30,7 +30,12 @@ class OffreStage(Base):
     date_fin     = Column(Date, nullable=False)
     places_dispo = Column(Integer, nullable=False, default=1)
     statut       = Column(
-        SAEnum(StatutOffre, name="statutoffre", create_type=False),
+        SAEnum(
+            StatutOffre,
+            values_callable=lambda x: [e.value for e in x],
+            name="statutoffre",
+            create_type=False,
+        ),
         nullable=False, default=StatutOffre.OUVERT, index=True,
     )
     cree_par = Column(String, nullable=True)  # FK vers utilisateurs.id
